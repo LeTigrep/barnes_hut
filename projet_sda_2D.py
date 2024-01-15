@@ -220,27 +220,50 @@ class BoundingBox:
 
 
 def draw_bodies_pygame():
+    """
+    Dessine les corps dans la fenêtre Pygame en fonction de leur position.
+    """
     for i in range(N):
+        # Vérifie si le corps est à l'intérieur des limites définies par BOUNDS
         if BOUNDS.inside(POS[i]):
             x, y = convert_to_screen_coords(POS[i])
+            # Dessine un cercle représentant le corps avec une taille proportionnelle à sa masse
             pygame.draw.circle(screen, (0, 0, 0), (x, y), int(MASS[i] * 2))
 
 def draw_bbox_pygame(node):
+    """
+    Dessine les boîtes englobantes de la QuadTree dans la fenêtre Pygame.
+    Les boîtes englobantes des nœuds feuilles sont en vert, et celles des nœuds parents sont en rouge.
+    """
     if node is not None:
+        # Convertit les coordonnées de la boîte englobante en coordonnées d'écran
         x0, y0 = convert_to_screen_coords(node.bbox.min())
         x1, y1 = convert_to_screen_coords(node.bbox.max())
+        
+        # Dessine un rectangle autour de la boîte englobante en bleu
         pygame.draw.rect(screen, (0, 0, 255), (x0, y0, x1 - x0, y1 - y0), 1)
+        
         if node.leaf:
-            color = (0, 255, 0)  # Green for leaf nodes
+            color = (0, 255, 0)  # Vert pour les nœuds feuilles
         else:
-            color = (255, 0, 0)  # Red for parent nodes
+            color = (255, 0, 0)  # Rouge pour les nœuds parents
+        
+        # Dessine un rectangle coloré autour de la boîte englobante
         pygame.draw.rect(screen, color, (x0, y0, x1 - x0, y1 - y0), 1)
+        
+        # Dessine les boîtes englobantes des enfants récursivement
         for child in node.children:
             draw_bbox_pygame(child)
 
 def convert_to_screen_coords(p):
+    """
+    Convertit les coordonnées du monde en coordonnées d'écran.
+    """
+    # Normalise les coordonnées par rapport aux limites définies par BOUNDS
     screen_pos = (p - BOUNDS.min()) / (BOUNDS.max() - BOUNDS.min()) * np.array(screen_size)
+    # Tronque les valeurs et les convertit en entiers
     return np.trunc(screen_pos).astype(int)
+
 
 
 N = 100
