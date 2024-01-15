@@ -156,27 +156,35 @@ class Quad:
 
 
 class BoundingBox:
-    def __init__(self,box,dim=2):
+    def __init__(self, box, dim=2):
+        # Ensure the dimension is correct for the bounding box
         assert(dim*2 == len(box))
-        self.box = array(box,dtype=float)
-        self.center = array( [(self.box[2]+self.box[0])/2, (self.box[3]+self.box[1])/2] , dtype=float)
+        # Convert the box to a numpy array of float type
+        self.box = array(box, dtype=float)
+        # Calculate the center of the bounding box
+        self.center = array([(self.box[2]+self.box[0])/2, (self.box[3]+self.box[1])/2], dtype=float)
+        # Store the dimension
         self.dim = dim
+        # Calculate the side length of the bounding box
         self.sideLength = self.max() - self.min()
+
 
     def max(self):
         return self.box[self.dim:]
     def min(self):
         return self.box[:self.dim]
-    def inside(self,p):
-        # p = [x,y]
+    def inside(self, p):
+        # Check if each coordinate of p is inside the bounding box
         if any(p < self.min()) or any(p > self.max()):
             return False
         else:
             return True
-    def getQuadIdx(self,p):
+
+    def getQuadIdx(self,p):   
         # y goes up
         # 0 1
         # 2 3
+        # Compare the coordinates of p with the center of the bounding box
         if p[0] > self.center[0]: # x > mid
             if p[1] > self.center[1]: # y > mid
                 return 1
@@ -192,7 +200,9 @@ class BoundingBox:
         # 2 3
         # [x  y x2 y2]
         #  0  1  2  3
+        # Initialize an array for the new coordinates of the bounding box
         b = array([None,None,None,None])
+        # Determine the new coordinates based on the quadrant index
         if idx % 2 == 0:
             # Even #, left half
             b[::2] = [self.box[0], self.center[0]] # x - midx
@@ -203,6 +213,7 @@ class BoundingBox:
             b[1::2] = [self.center[1], self.box[3]] # midy - y2
         else:
             b[1::2] = [self.box[1], self.center[1]] # y - midy
+        # Create and return a new instance of BoundingBox
         return BoundingBox(b,self.dim)
 
 
