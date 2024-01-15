@@ -153,7 +153,82 @@ class Quad:
 
     def getQuadIndex(self,idx):
         return self.bbox.getQuadIdx(POS[idx])
-    
+class BoundingBox:
+    def __init__(self,box,dim=2):
+        assert(dim*2 == len(box))
+        self.box = array(box,dtype=float)
+        self.center = array( [(self.box[2]+self.box[0])/2, (self.box[3]+self.box[1])/2] , dtype=float)
+        self.dim = dim
+        self.sideLength = self.max() - self.min()
+
+    def max(self):
+        return self.box[self.dim:]
+    def min(self):
+        return self.box[:self.dim]
+    def inside(self,p):
+        # p = [x,y]
+        if any(p < self.min()) or any(p > self.max()):
+            return False
+        else:
+            return True
+    def getQuadIdx(self,p):
+        # y goes up
+        # 0 1
+        # 2 3
+        if p[0] > self.center[0]: # x > mid
+            if p[1] > self.center[1]: # y > mid
+                return 1
+            else:
+                return 3
+        else:
+            if p[1] > self.center[1]: # y > mid
+                return 0
+            else:
+                return 2
+    def getSubQuad(self,idx):
+        # 0 1
+        # 2 3
+        # [x  y x2 y2]
+        #  0  1  2  3
+        b = array([None,None,None,None])
+        if idx % 2 == 0:
+            # Even #, left half
+            b[::2] = [self.box[0], self.center[0]] # x - midx
+        else:
+            b[::2] = [self.center[0], self.box[2]] # midx - x2
+        if idx < 2:
+            # Upper half (0 1)
+            b[1::2] = [self.center[1], self.box[3]] # midy - y2
+        else:
+            b[1::2] = [self.box[1], self.center[1]] # y - midy
+        return BoundingBox(b,self.dim)
+
+
+
+
+def draw_bodies_pygame():
+    for i in range(N):
+        if BOUNDS.inside(POS[i]):
+            x, y = convert_to_screen_coords(POS[i])
+            pygame.draw.circle(screen, (0, 0, 0), (x, y), int(MASS[i] * 2))
+
+def draw_bbox_pygame(node):
+    if node is not None:
+        x0, y0 = convert_to_screen_coords(node.bbox.min())
+        x1, y1 = convert_to_screen_coords(node.bbox.max())
+        pygame.draw.rect(screen, (0, 0, 255), (x0, y0, x1 - x0, y1 - y0), 1)
+        if node.leaf:
+            color = (0, 255, 0)  # Green for leaf nodes
+        else:
+            color = (255, 0, 0)  # Red for parent nodes
+        pygame.draw.rect(screen, color, (x0, y0, x1 - x0, y1 - y0), 1)
+        for child in node.children:
+            draw_bbox_pygame(child)
+
+def convert_to_screen_coords(p):
+    screen_pos = (p - BOUNDS.min()) / (BOUNDS.max() - BOUNDS.min()) * np.array(screen_size)
+    return np.trunc(screen_pos).astype(int)
+
 
 N = 100
 BOUNDS = BoundingBox([0,0,10,10])
