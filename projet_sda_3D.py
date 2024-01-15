@@ -239,3 +239,55 @@ class Octant:
             for x in range(8)
         )
         return f"D{self.depth}{{N:{self.N},M:{round(self.mass, 2)},{childCount}COM:{self.com.round(2)},B:{bodstring}}}{childStr}"
+
+class BoundingBox:
+    def __init__(self, box):
+        assert (len(box) == 6)  # Assurez-vous que la boîte a 6 valeurs pour 3D (x_min, y_min, z_min, x_max, y_max, z_max)
+        self.box = array(box, dtype=float)
+        self.center = array([(self.box[3] + self.box[0]) / 2, (self.box[4] + self.box[1]) / 2,
+                             (self.box[5] + self.box[2]) / 2], dtype=float)
+        self.sideLength = self.max() - self.min()
+
+    def max(self):
+        return self.box[3:]
+
+    def min(self):
+        return self.box[:3]
+
+    def inside(self, p):
+        if any(p < self.min()) or any(p > self.max()):
+            return False
+        else:
+            return True
+
+    def getOctantIdx(self, p):
+        idx = 0
+        if p[0] > self.center[0]: idx |= 1
+        if p[1] > self.center[1]: idx |= 2
+        if p[2] > self.center[2]: idx |= 4
+        return idx
+
+    def getSubOctant(self, idx):
+        b = array([None] * 6)
+        if idx & 1:
+            b[::3] = [self.center[0], self.box[3]]  # x_mid to x_max
+        else:
+            b[::3] = [self.box[0], self.center[0]]  # x_min to x_mid
+
+        if idx & 2:
+            b[1::3] = [self.center[1], self.box[4]]  # y_mid to y_max
+        else:
+            b[1::3] = [self.box[1], self.center[1]]  # y_min to y_mid
+
+        if idx & 4:
+            b[2::3] = [self.center[2], self.box[5]]  # z_mid to z_max
+        else:
+            b[2::3] = [self.box[2], self.center[2]]  # z_min to z_mid
+
+        return BoundingBox(b)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return "<<" + ",".join(f"{v:g}" for v in self.box) + ">>"
