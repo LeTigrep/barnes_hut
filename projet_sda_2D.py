@@ -153,4 +153,70 @@ class Quad:
 
     def getQuadIndex(self,idx):
         return self.bbox.getQuadIdx(POS[idx])
+    
+
+N = 100
+BOUNDS = BoundingBox([0,0,10,10])
+
+
+
+# Global variables
+# 2D Position
+MASS = zeros(N,dtype=float)
+POS = zeros((N,2),dtype=float)
+VEL = zeros((N,2),dtype=float)
+ACC = zeros((N,2),dtype=float)
+for i in range(N):
+    MASS[i] = 1 
+    POS[i] = BOUNDS.min() + array([random.random(), random.random()]) * BOUNDS.sideLength
+
+
+# Calculate the center of mass for the entire system
+total_mass = MASS.sum()
+center_of_mass = np.average(POS, axis=0, weights=MASS)
+# Maximum speed calculation
+DT = 0.00001
+T = 0
+max_speed = min(BOUNDS.sideLength) / (2 * DT)
+# Define the central point of the simulation (where the horizontal and vertical lines intersect)
+central_point = np.array([BOUNDS.sideLength[0] / 2, BOUNDS.sideLength[1] / 2])
+
+sys = QuadTree(BOUNDS, N)
+# Calculate the initial angles for each body
+angles = np.arctan2(POS[:, 1] - central_point[1], POS[:, 0] - central_point[0])
+
+angular_speed = 0.01
+# Main loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    for i in range(N):
+        radius = np.linalg.norm(POS[i] - central_point)
+        angles[i] += angular_speed  # Update the angle
+
+        # Update POS[i] to be on the circle
+        POS[i][0] = central_point[0] + radius * np.cos(angles[i])
+        POS[i][1] = central_point[1] + radius * np.sin(angles[i])
+
+
+    sys.generate()
+    sys.updateSys(DT)
+
+    
+
+
+    # Drawing
+    screen.fill((255, 255, 255))
+    draw_bodies_pygame()
+    draw_bbox_pygame(sys.root)
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
+
+
         
