@@ -153,6 +153,8 @@ class Quad:
 
     def getQuadIndex(self,idx):
         return self.bbox.getQuadIdx(POS[idx])
+
+
 class BoundingBox:
     def __init__(self,box,dim=2):
         assert(dim*2 == len(box))
