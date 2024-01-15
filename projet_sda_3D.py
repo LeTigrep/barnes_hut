@@ -19,6 +19,7 @@ ETA = 0.5 # Facteur de ramollissement
 
 NUM_CHECKS = 2  # Compteur
 
+# pour créer l'axe x y z en 3d 
 def draw_bbox_matplotlib(node):
     if node is not None:
         min_point = node.bbox.min()
@@ -58,11 +59,12 @@ def draw_bbox_matplotlib(node):
 
         plt.show()
 
+        # dessine les boites englobantes des enfants de l'octant
         for child in node.children:
             draw_bbox_matplotlib(child)
 
 
-
+# fonction qui affiche les corps 
 def draw_bodies_matplotlib(POS, MASS):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -91,27 +93,34 @@ class Octree:
         self.theta = theta
         self.reset()
 
+    # Réinitialise l'octree pour créer par la suite un nouvel octree
     def reset(self):
         self.root = Octant(self.bbox)
 
+    #  Génère les corps initiaux pour la simulation.
     def generate(self):
         self.reset()
         for x in range(self.N):
             self.root.addBody(x, 0)
-
+            
+    # Met à jour le système en calculant les accélérations et en mettant à jour les positions et les vitesses des corps.
     def updateSys(self, dt):
         self.calculateBodyAccels()
         global VEL, POS
         VEL += ACC * dt
         POS += VEL * dt
 
+    # calcule les accélérations de tous les corps du système en utilisant la méthode de l'octre
     def calculateBodyAccels(self):
         for k in range(self.N):
             ACC[k] = self.calculateBodyAccel(k)
 
+    # Calcule l'accélération d'un corps en utilisant la méthode de l'octree
+    # bodI indice du corps 
     def calculateBodyAccel(self, bodI):
         return self.calculateBodyAccelR(bodI, self.root)
 
+    # Calcule récursivement l'accélération d'un corps en parcourant l'octree
     def calculateBodyAccelR(self, bodI, node):
         acc = zeros(3, dtype=float)
         if node.leaf:
@@ -136,6 +145,7 @@ class Octree:
     def __str__(self):
         return self.root.__str__()
 
+#  Calcule la force de gravité entre deux corps
 def getForce(p1, m1, p2, m2):
     global NUM_CHECKS
     d = p2 - p1
@@ -166,17 +176,19 @@ class Octant:
             self.N = 0
 
         self.children = [None] * 8  # 8 fils pour le octree
-    
+
+    # Cette méthode est utilisée pour ajouter un corps ponctuel dans l'octant
     def addBody(self, idx, depth):
-        if len(self.bods) > 0 or not self.leaf:
+        if len(self.bods) > 0 or not self.leaf:   # Vérifie si l'octant actuel contient déjà des corps
             if depth >= MAXDEPTH:
                 self.bods.append(idx)
             else:
-                subBods = [idx]
+                subBods = [idx]                    # Si la profondeur maximale n'est pas atteinte, divise l'octant en huit sous-octants
                 if len(self.bods) > 0:
                     subBods.append(self.bods[0])
                     self.bods = []
-
+                
+                 # Parcourt chaque corps à ajouter dans les sous-octants
                 for bod in subBods:
                     octantIdx = self.getOctantIndex(bod)
                     if self.children[octantIdx]:
@@ -185,7 +197,9 @@ class Octant:
                         subBBox = self.bbox.getSubOctant(octantIdx)
                         self.children[octantIdx] = Octant(subBBox, bod, depth + 1)
 
-                self.leaf = False
+                
+                # L'octant actuel n'est plus considéré comme une feuille car il contient des sous-octants
+                self.leaf = False            
 
             self.com = (self.com * self.mass + POS[idx] * MASS[idx]) / (self.mass + MASS[idx])
             self.mass += MASS[idx]
@@ -194,6 +208,7 @@ class Octant:
 
         self.N += 1
 
+    # maj le centre de masse
     def updateCOM(self):
         if self.leaf:
             self.mass = sum(MASS[x] for x in self.bods)
@@ -202,11 +217,13 @@ class Octant:
             self.mass = sum(child.mass if child else 0 for child in self.children)
             self.com = sum((child.mass * child.com if child else zeros(3)) for child in self.children) / self.mass
 
+    # elle va contenir un une corps ponctuel 
     def setToBody(self, idx):
         self.bods = [idx]
         self.mass = float(MASS[idx])
         self.com = POS[idx].copy()
 
+    # utilisée pour déterminer dans quel sous-octant de l'octant actuel un corps ponctuel doit être placé
     def getOctantIndex(self, idx):
         return self.bbox.getOctantIdx(POS[idx])
 
