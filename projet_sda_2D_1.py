@@ -70,7 +70,7 @@ class QuadTree:
             if start_node == self.root:   # le corps n'est pas de le quadtree
                 return None 
 
-
+    # deplace un corps ponctuel identifié par son indice (ancien quadtree et nouveau) 
     def move_body(self, body_idx, old_quad, new_quad):
 
         old_quad.remove_body(body_idx)
@@ -88,6 +88,7 @@ class QuadTree:
         # Update center of mass and mass for the new quad after addition
         new_quad.update_mass_and_com(body_idx)
 
+    # maj la structure du quadtree
     def update_tree(self):
         for body_idx in range(N):
             old_quad = self.find_quad_of_body(body_idx, self.root)
