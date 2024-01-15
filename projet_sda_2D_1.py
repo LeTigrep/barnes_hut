@@ -49,23 +49,25 @@ class QuadTree:
                     return self.find_quad_of_body(body_idx, child)
         return None
 
+    # fonction qui permet de voir si un corps a changé de postion de manière significative par rapport à l'ancien
     def has_moved_significantly(self, body_idx, old_quad):
 
         if old_quad is None:
             return True  # Considérez-le comme considérablement déplacé
         return not old_quad.bbox.inside(POS[body_idx])
 
+    # permet de trouver le nouveau quadtree où un corps ponctuel devrait être placé
     def find_new_quad(self, body_idx, start_node):
-
+        # vérifie si le noeud de départ est toujours à l'interieur de boite englobante
         if start_node.bbox.inside(POS[body_idx]):
             if start_node.leaf:
-                return start_node
-            else:
+                return start_node  # si oui donc c'est le bon noeud à placer 
+            else:                                # si non le corps à donc quitter la boite il faut le remplacer 
                 for child in start_node.children:
                     if child and child.bbox.inside(POS[body_idx]):
                         return self.find_new_quad(body_idx, child)
         else:
-            if start_node == self.root:
+            if start_node == self.root:   # le corps n'est pas de le quadtree
                 return None 
 
 
@@ -120,6 +122,7 @@ class QuadTree:
             else:
                 # Si le corps est en dehors du quad racine, réglez son accélération à zéro
                 ACC[k] = zeros(2, dtype=float)
+                
     def calculateBodyAccel(self, bodI):
         return self.calculateBodyAccelR(bodI, self.root)
 
