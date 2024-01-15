@@ -37,10 +37,10 @@ class QuadTree:
     def reset(self):
         self.root = Quad(self.bbox)
     def generate(self):
-       # Construction des nœuds d'arbre frais pour les corps
+        # Build up nodes of tree fresh for bodies
         self.reset()
         for x in range(self.N):
-            # Pour chaque corps, ajoutez à la racine
+            # For each body, add to root
             self.root.addBody(x,0)
 
     def updateSys(self, dt):
@@ -49,19 +49,19 @@ class QuadTree:
         VEL += ACC * dt
 
     def calculateBodyAccels(self):
-        # Mettre à jour la table ACC en fonction du POS actuel
+        # Update ACC table based on current POS
         for k in range(self.N):
             ACC[k] = self.calculateBodyAccel(k)
     def calculateBodyAccel(self, bodI):
         return self.calculateBodyAccelR(bodI, self.root)
 
     def calculateBodyAccelR(self, bodI, node):
-        # Calculer l'accélération sur le corps I
-        # La principale différence est que le corps est ignoré dans les calculs
+        # Calculate acceleration on body I
+        # key difference is that body is ignored in calculations
         acc = zeros(2,dtype=float)
         if (node.leaf):
             # print "Leaf"
-            # Nœud feuille, pas d'enfant
+            # Leaf node, no children
             for k in node.bods:
                 if k != bodI: # Skip same body
                     acc += getForce( POS[bodI] ,1.0,POS[k],MASS[k])
@@ -70,14 +70,14 @@ class QuadTree:
             d = node.center - POS[bodI]
             r = sqrt(d.dot(d))
             if (r > 0 and s/r < self.theta):
-                # Assez loin pour faire une approximation
+                # Far enough to do approximation
                 acc += getForce( POS[bodI] ,1.0, node.com, node.mass)
             else:
-                # Trop proche de l'approximation, récursion vers le bas de l'arbre
+                # Too close to approximate, recurse down tree
                 for k in range(4):
                     if node.children[k] != None:
                         acc += self.calculateBodyAccelR(bodI, node.children[k])
-        # print "ACC : %s" % acc
+
         return acc
 
         
@@ -90,3 +90,67 @@ def getForce(p1,m1,p2,m2):
     f = array( d * G*m1*m2 / r**3 )
     NUM_CHECKS += 1
     return f
+
+
+class Quad:
+    """ A rectangle of space, contains point bodies """
+    def __init__(self,bbox,bod = None,depth=0):
+        self.bbox = bbox
+        self.center = bbox.center
+        self.leaf = True # Whether is a parent or not
+        self.depth = depth
+        if bod != None: # want to capture 0 int also
+            self.setToBody(bod)
+            self.N = 1
+        else:
+            self.bods = []
+            self.mass = 0.
+            self.com = array([0,0], dtype=float)
+            self.N = 0
+            
+        self.children = [None]*4 # top-left,top-right,bot-left,bot-right
+
+    def addBody(self, idx,depth):
+        # Recurse if you have a body or you have children
+        if len(self.bods) > 0 or not self.leaf:
+            # Not empty
+            if (depth >= MAXDEPTH):
+                self.bods.append(idx)
+            else:
+                # Subdivide tree
+                subBods = [idx] # bodies to add to children
+                if len(self.bods) > 0:
+                    # if node has no children yet, move own body down to child
+                    subBods.append(self.bods[0])
+                    self.bods = []
+
+                for bod in subBods:
+                    quadIdx = self.getQuadIndex(bod)
+                    if self.children[quadIdx]:
+                        # child exists, recursively call 
+                        self.children[quadIdx].addBody(bod,depth+1)
+                    else:
+                        # create child
+                        subBBox = self.bbox.getSubQuad(quadIdx)
+                        self.children[quadIdx] = Quad(subBBox, bod,depth+1)
+
+                self.leaf = False
+
+            bodyMass   = MASS[idx]
+            self.com   = (self.com * self.mass + POS[idx] * bodyMass) / (self.mass + bodyMass)
+            self.mass += bodyMass
+        else:
+            # Empty Quad, add body directly
+            self.setToBody(idx)
+
+        self.N += 1 # Number of bodies incremented
+    
+        
+    def setToBody(self,idx):
+        self.bods = [idx]
+        self.mass = float( MASS[idx].copy() )
+        self.com  = POS[idx].copy()
+
+    def getQuadIndex(self,idx):
+        return self.bbox.getQuadIdx(POS[idx])
+        
