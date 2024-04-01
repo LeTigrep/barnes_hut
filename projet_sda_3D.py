@@ -81,8 +81,6 @@ def draw_bodies_matplotlib(POS, MASS):
 
 
 
-
-
 class Octree:
     """ Class pour N points stockés sous forme d'Octree 3D """
     root = None
@@ -157,7 +155,6 @@ def getForce(p1, m1, p2, m2):
 
 
 
-
 class Octant:
     """Une région 3D de l'espace, contient des corps ponctuels"""
     def __init__(self, bbox, bod=None, depth=0):
@@ -183,7 +180,7 @@ class Octant:
             if depth >= MAXDEPTH:
                 self.bods.append(idx)
             else:
-                subBods = [idx]                    # Si la profondeur maximale n'est pas atteinte, divise l'octant en huit sous-octants
+                subBods = [idx]    # Si la profondeur maximale n'est pas atteinte, divise l'octant en huit sous-octants
                 if len(self.bods) > 0:
                     subBods.append(self.bods[0])
                     self.bods = []
